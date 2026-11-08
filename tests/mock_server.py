@@ -32,7 +32,10 @@ class MockHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        MockHandler.last_auth = self.headers.get("Authorization")
         if self.path == "/v1/models":
+            if MockHandler.last_auth != "Bearer secret":
+                return self._json({"error": {"message": "invalid api key"}}, 401)
             self._json(MODELS_PAYLOAD)
         else:
             self._json({"error": {"message": "not found"}}, 404)

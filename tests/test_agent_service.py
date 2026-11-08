@@ -80,3 +80,27 @@ def test_complete_chat_end_to_end_against_mock_server(mock_server, settings):
     out = complete_chat(agent, settings, [{"role": "user", "content": "hi"}])
     assert out == "Hello, world"
     assert MockHandler.last_payload["messages"][0]["role"] == "system"
+
+
+def test_test_mistral_key_ok(mock_server, monkeypatch):
+    from mistral_desktop.providers import OpenAICompatProvider
+
+    monkeypatch.setattr(agent_service, "mistral_provider",
+                        lambda key: OpenAICompatProvider(mock_server, "secret"))
+    assert "OK" in agent_service.test_mistral_key("anything")
+
+
+def test_test_mistral_key_rejected(mock_server, monkeypatch):
+    from mistral_desktop.providers import OpenAICompatProvider
+
+    monkeypatch.setattr(agent_service, "mistral_provider",
+                        lambda key: OpenAICompatProvider(mock_server, "wrong-key"))
+    assert "rejected" in agent_service.test_mistral_key("anything")
+
+
+def test_test_hf_token_rejected(mock_server, monkeypatch):
+    from mistral_desktop.providers import OpenAICompatProvider
+
+    monkeypatch.setattr(agent_service, "huggingface_provider",
+                        lambda token: OpenAICompatProvider(mock_server, "bad-token"))
+    assert "rejected" in agent_service.test_hf_token("bad-token")

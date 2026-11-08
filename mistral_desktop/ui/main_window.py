@@ -163,7 +163,11 @@ class MainWindow(ctk.CTk):
                     self._finish_stream(payload)
                 elif kind == "error":
                     self.chat_view.end_stream("")
-                    self.chat_view.show_error(payload)
+                    msg = payload
+                    if "401" in msg or "Invalid API Key" in msg.lower() or "invalid api key" in msg.lower():
+                        msg += (" — the API key was rejected. Check ⚙ Settings and use “Test keys”; "
+                                "note: a MISTRAL_API_KEY / HF_TOKEN env var overrides the saved key.")
+                    self.chat_view.show_error(msg)
                     self._finish_stream(None)
         except queue.Empty:
             pass

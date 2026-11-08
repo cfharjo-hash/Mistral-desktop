@@ -89,3 +89,19 @@ def run_chat(agent: Agent, settings: Settings, messages: list[dict], temperature
 
 def complete_chat(agent: Agent, settings: Settings, messages: list[dict], temperature: float = 0.7) -> str:
     return "".join(c.text for c in run_chat(agent, settings, messages, temperature))
+
+
+def test_mistral_key(key: str) -> str:
+    try:
+        models = mistral_provider(key).list_models()
+        return f"Mistral: OK — {len(models)} models visible"
+    except ProviderError as e:
+        return f"Mistral: rejected — {e}"
+
+
+def test_hf_token(token: str) -> str:
+    try:
+        models = huggingface_provider(token).list_models()
+        return f"Hugging Face: OK — {len(models)} models visible"
+    except ProviderError as e:
+        return f"Hugging Face: rejected — {e}"

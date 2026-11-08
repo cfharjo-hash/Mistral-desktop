@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import os
+import queue
+import threading
 
 import customtkinter as ctk
 
-from .. import config
+from .. import agent_service, config
 
 
 class SettingsDialog(ctk.CTkToplevel):
@@ -16,9 +18,11 @@ class SettingsDialog(ctk.CTkToplevel):
         self.on_saved = on_saved
         self.settings = store.load_settings()
         self.title("Settings")
-        self.geometry("540x380")
+        self.geometry("560x470")
         self.resizable(False, False)
         self.grab_set()
+        self._q: queue.Queue = queue.Queue()
+        self.after(80, self._poll)
 
         ctk.CTkLabel(self, text="API keys", font=ctk.CTkFont(size=15, weight="bold")).pack(anchor="w", padx=16, pady=(14, 4))
         self.mistral_entry = self._secret_row(
@@ -32,29 +36,76 @@ class SettingsDialog(ctk.CTkToplevel):
             bool(os.environ.get(config.ENV_HF_TOKEN) or os.environ.get(config.ENV_HF_TOKEN_ALT)),
         )
 
-        ctk.CTkLabel(self, text="Appearance", anchor="w").pack(fill="x", padx=16, pady=(12, 0))
+        row = ctk.CTkFrame(self, fg_color="transparent")
+        row.pack(fill="x", padx=16, pady=8)
+        ctk.CTkButton(row, text="Test keys", command=self._test_keys).pack(side="left")
+        ctk.CTkButton(row, text="Save", command=self._save).pack(side="left", padx=8)
+        self.test_status = ctk.CTkLabel(self, text="", text_color="gray60", anchor="w", justify="left", wraplength=500)
+        self.test_status.pack(fill="x", padx=16)
+
+        ctk.CTkLabel(self, text="Appearance", anchor="w").pack(fill="x", padx=16, pady=(8, 0))
         self.appearance = ctk.CTkOptionMenu(self, values=["System", "Dark", "Light"])
         self.appearance.set(self.settings.appearance or "System")
         self.appearance.pack(fill="x", padx=16)
 
         ctk.CTkLabel(
             self,
-            text="Tip: set MISTRAL_API_KEY / HF_TOKEN environment variables instead of storing keys here. "
+            text="Tip: environment variables MISTRAL_API_KEY / HF_TOKEN take precedence over keys saved here. "
                  "If the keyring package is installed, saved keys go to your OS keychain.",
-            text_color="gray60", wraplength=470, justify="left",
+            text_color="gray60", wraplength=500, justify="left",
         ).pack(fill="x", padx=16, pady=10)
-
-        ctk.CTkButton(self, text="Save", command=self._save).pack(pady=8)
 
     def _secret_row(self, label: str, current: str, from_env: bool) -> ctk.CTkEntry:
         ctk.CTkLabel(self, text=label, anchor="w").pack(fill="x", padx=16, pady=(8, 0))
         entry = ctk.CTkEntry(self, show="•")
         if from_env:
-            entry.configure(placeholder_text="set via environment variable")
+            entry.configure(placeholder_text="set via environment variable (takes precedence)")
+            source = "source: environment variable (overrides saved key)"
         elif current:
             entry.insert(0, self.MASK)
+            source = "source: saved locally"
+        else:
+            source = "source: not set"
         entry.pack(fill="x", padx=16)
+        ctk.CTkLabel(self, text=source, anchor="w", text_color="gray60",
+                     font=ctk.CTkFont(size=11)).pack(fill="x", padx=16)
         return entry
+
+    def _entry_secret(self, entry: ctk.CTkEntry, resolved: str) -> str:
+        value = entry.get()
+        if value and value != self.MASK:
+            return value
+        return resolved
+
+    def _test_keys(self) -> None:
+        mk = self._entry_secret(self.mistral_entry, config.resolve_mistral_key(self.settings))
+        hk = self._entry_secret(self.hf_entry, config.resolve_hf_token(self.settings))
+        self.test_status.configure(text="Testing…")
+        threading.Thread(target=self._test_worker, args=(mk, hk), daemon=True).start()
+
+    def _test_worker(self, mistral_key: str, hf_token: str) -> None:
+        results = []
+        try:
+            if mistral_key:
+                results.append(agent_service.test_mistral_key(mistral_key))
+            if hf_token:
+                results.append(agent_service.test_hf_token(hf_token))
+        except Exception as e:
+            results.append(f"test error: {e}")
+        if not results:
+            results.append("No keys entered.")
+        self._q.put(("test", "\n".join(results)))
+
+    def _poll(self) -> None:
+        try:
+            while True:
+                kind, payload = self._q.get_nowait()
+                if kind == "test":
+                    self.test_status.configure(text=payload)
+        except queue.Empty:
+            pass
+        if self.winfo_exists():
+            self.after(80, self._poll)
 
     def _save(self) -> None:
         s = self.settings
