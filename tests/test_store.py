@@ -85,3 +85,20 @@ def test_agents_file_is_private(store):
 def test_settings_from_dict_ignores_unknown_keys():
     s = Settings.from_dict({"appearance": "Light", "bogus": 1})
     assert s.appearance == "Light"
+
+
+def test_settings_font_fields_roundtrip(store):
+    s = Settings(chat_font_family="Consolas", chat_font_size=18)
+    store.save_settings(s)
+    loaded = store.load_settings()
+    assert loaded.chat_font_family == "Consolas"
+    assert loaded.chat_font_size == 18
+    assert Settings().chat_font_family == "Default"
+    assert Settings().chat_font_size == 14
+    assert Settings().font_family_effective is None
+    assert Settings(chat_font_family="Consolas").font_family_effective == "Consolas"
+
+
+def test_settings_from_dict_keeps_font_fields():
+    s = Settings.from_dict({"chat_font_family": "Verdana", "chat_font_size": 20})
+    assert s.chat_font_family == "Verdana" and s.chat_font_size == 20

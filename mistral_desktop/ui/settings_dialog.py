@@ -8,6 +8,9 @@ import customtkinter as ctk
 
 from .. import agent_service, config
 
+FONT_FAMILIES = ["Default", "Segoe UI", "Arial", "Helvetica", "Verdana", "Tahoma",
+                 "Georgia", "Times New Roman", "Consolas", "Courier New"]
+
 
 class SettingsDialog(ctk.CTkToplevel):
     MASK = "••••••••"
@@ -18,7 +21,7 @@ class SettingsDialog(ctk.CTkToplevel):
         self.on_saved = on_saved
         self.settings = store.load_settings()
         self.title("Settings")
-        self.geometry("560x470")
+        self.geometry("560x560")
         self.resizable(False, False)
         self.grab_set()
         self._q: queue.Queue = queue.Queue()
@@ -47,6 +50,23 @@ class SettingsDialog(ctk.CTkToplevel):
         self.appearance = ctk.CTkOptionMenu(self, values=["System", "Dark", "Light"])
         self.appearance.set(self.settings.appearance or "System")
         self.appearance.pack(fill="x", padx=16)
+
+        ctk.CTkLabel(self, text="Chat text", font=ctk.CTkFont(size=15, weight="bold")).pack(anchor="w", padx=16, pady=(12, 0))
+        ctk.CTkLabel(self, text="Font", anchor="w").pack(fill="x", padx=16, pady=(6, 0))
+        self.font_family = ctk.CTkOptionMenu(self, values=FONT_FAMILIES)
+        self.font_family.set(self.settings.chat_font_family or "Default")
+        self.font_family.pack(fill="x", padx=16)
+        srow = ctk.CTkFrame(self, fg_color="transparent")
+        srow.pack(fill="x", padx=16, pady=(8, 0))
+        ctk.CTkLabel(srow, text="Text size", anchor="w").pack(side="left")
+        self.font_size_label = ctk.CTkLabel(srow, text=str(int(self.settings.chat_font_size or 14)), width=30)
+        self.font_size_label.pack(side="right")
+        self.font_size = ctk.CTkSlider(
+            self, from_=10, to=24, number_of_steps=14,
+            command=lambda v: self.font_size_label.configure(text=str(int(v))),
+        )
+        self.font_size.set(int(self.settings.chat_font_size or 14))
+        self.font_size.pack(fill="x", padx=16)
 
         ctk.CTkLabel(
             self,
@@ -116,6 +136,8 @@ class SettingsDialog(ctk.CTkToplevel):
         if hv and hv != self.MASK:
             config.persist_secret(s, "hf_token", hv)
         s.appearance = self.appearance.get()
+        s.chat_font_family = self.font_family.get()
+        s.chat_font_size = int(self.font_size.get())
         self.store.save_settings(s)
         if self.on_saved:
             self.on_saved()

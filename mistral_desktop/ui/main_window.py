@@ -70,7 +70,9 @@ class MainWindow(ctk.CTk):
         self.clear_btn = ctk.CTkButton(topbar, text="Clear chat", width=90, command=self._clear_chat)
         self.clear_btn.pack(side="right", padx=6, pady=6)
 
-        self.chat_view = ChatView(main, on_send=self._on_send)
+        self.chat_view = ChatView(main, on_send=self._on_send,
+                                  font_family=self.settings.font_family_effective,
+                                  font_size=self.settings.chat_font_size)
         self.chat_view.grid(row=1, column=0, sticky="nsew")
 
         agents = self.store.list_agents()
@@ -240,3 +242,4 @@ class MainWindow(ctk.CTk):
     def _reload_settings(self) -> None:
         self.settings = self.store.load_settings()
         ctk.set_appearance_mode(self.settings.appearance or "System")
+        self.chat_view.apply_text_style(self.settings.font_family_effective, self.settings.chat_font_size)

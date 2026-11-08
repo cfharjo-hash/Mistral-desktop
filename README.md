@@ -23,6 +23,8 @@ OpenRouter, Together, vLLM, …).
   validates each key against its API and shows which source (env var vs. saved) is active.
   Keys are read from env vars first (`MISTRAL_API_KEY`, `HF_TOKEN` / `HUGGING_FACE_HUB_TOKEN`),
   then the OS keychain if `keyring` is installed, then a local `settings.json` (mode `0600`).
+- **Chat text size & font** — adjustable in Settings (font family + size slider), applied live to
+  the whole conversation.
 - **Headless CLI mode** for scripting/testing.
 
 ## Quickstart

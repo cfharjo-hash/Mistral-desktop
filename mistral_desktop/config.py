@@ -31,6 +31,12 @@ class Settings:
     hf_token: str = ""
     appearance: str = "System"
     last_agent_id: str = ""
+    chat_font_family: str = "Default"
+    chat_font_size: int = 14
+
+    @property
+    def font_family_effective(self):
+        return None if self.chat_font_family in ("", "Default") else self.chat_font_family
 
     def to_dict(self) -> dict:
         return asdict(self)
