@@ -23,5 +23,8 @@ mistral-desktop = "mistral_desktop.main:main"
 [tool.setuptools.packages.find]
 include = ["mistral_desktop*"]
 
+[tool.setuptools.package-data]
+mistral_desktop = ["assets/*.png", "assets/*.ico"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

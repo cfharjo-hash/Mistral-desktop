@@ -12,6 +12,13 @@ ENV_HF_TOKEN_ALT = "HUGGING_FACE_HUB_TOKEN"
 KEYRING_SERVICE = "mistral-desktop"
 
 
+def resource_path(name: str) -> Path:
+    base = getattr(sys, "_MEIPASS", None)
+    if base:
+        return Path(base) / "mistral_desktop" / "assets" / name
+    return Path(__file__).resolve().parent / "assets" / name
+
+
 def default_data_dir() -> Path:
     override = os.environ.get("MISTRAL_DESKTOP_HOME")
     if override:

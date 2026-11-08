@@ -102,3 +102,11 @@ def test_settings_font_fields_roundtrip(store):
 def test_settings_from_dict_keeps_font_fields():
     s = Settings.from_dict({"chat_font_family": "Verdana", "chat_font_size": 20})
     assert s.chat_font_family == "Verdana" and s.chat_font_size == 20
+
+
+def test_icon_assets_exist_and_resource_path():
+    from mistral_desktop.config import resource_path
+
+    assert resource_path("icon.png").exists()
+    assert resource_path("icon.ico").exists()
+    assert resource_path("icon.png").name == "icon.png"

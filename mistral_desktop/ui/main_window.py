@@ -9,6 +9,7 @@ import customtkinter as ctk
 
 from .. import hf_api
 from ..agent_service import run_chat
+from ..config import resource_path
 from ..models import Conversation, Message
 from ..store import Store
 from .add_agent_dialog import AddAgentDialog
@@ -24,6 +25,7 @@ class MainWindow(ctk.CTk):
         self.title("Mistral Desktop")
         self.geometry("1080x680")
         self.minsize(820, 480)
+        self._set_icon()
         self._q: queue.Queue = queue.Queue()
         self._agent = None
         self._streaming = False
@@ -79,6 +81,20 @@ class MainWindow(ctk.CTk):
         initial = self.store.get_agent(self.settings.last_agent_id) if self.settings.last_agent_id else None
         self.select_agent(initial or (agents[0] if agents else None))
         self.after(60, self._poll)
+
+    def _set_icon(self) -> None:
+        try:
+            self.iconbitmap(str(resource_path("icon.ico")))
+            return
+        except Exception:
+            pass
+        try:
+            from tkinter import PhotoImage
+
+            self._icon_photo = PhotoImage(file=str(resource_path("icon.png")))
+            self.iconphoto(True, self._icon_photo)
+        except Exception:
+            pass
 
     def refresh_agents(self) -> None:
         for w in self.agent_frame.winfo_children():
