@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mistral-desktop"
+version = "0.1.0"
+description = "Desktop app for chatting with Mistral and with agents added from Hugging Face or any custom OpenAI-compatible endpoint"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31",
+    "customtkinter>=5.2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+keyring = ["keyring>=25"]
+
+[project.scripts]
+mistral-desktop = "mistral_desktop.main:main"
+
+[tool.setuptools.packages.find]
+include = ["mistral_desktop*"]
+
+[tool.setuptools.package-data]
+mistral_desktop = ["assets/*.png", "assets/*.ico"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
