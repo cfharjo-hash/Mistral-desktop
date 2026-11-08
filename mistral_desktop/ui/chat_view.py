@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import math
 import time
+from pathlib import Path
 
 import customtkinter as ctk
+
+from ..files import read_file_block
 
 ROLE_LABELS = {"user": "You", "assistant": "Assistant", "system": "System"}
 ROLE_COLORS = {
@@ -88,8 +91,13 @@ class ChatView(ctk.CTkFrame):
                                     font=ctk.CTkFont(size=font_size, family=font_family))
         self.entry.pack(side="left", fill="both", expand=True, padx=(0, 8), pady=6)
         self.entry.bind("<Return>", self._on_return)
+        self.attach_label = ctk.CTkLabel(composer, text="", text_color="gray60",
+                                         font=ctk.CTkFont(size=11), anchor="e")
+        self.attach_label.pack(side="right", padx=(0, 6), pady=6)
         self.send_btn = ctk.CTkButton(composer, text="Send", width=90, command=self._send)
         self.send_btn.pack(side="right", pady=6)
+        self._attachments = []
+        self._setup_dnd()
 
     def apply_text_style(self, font_family, font_size: int) -> None:
         self.font_family = font_family
@@ -98,6 +106,44 @@ class ChatView(ctk.CTkFrame):
         for w in self.messages_frame.winfo_children():
             if isinstance(w, MessageBubble):
                 w.set_font(font_family, font_size)
+
+    def _setup_dnd(self) -> None:
+        self._dnd = False
+        try:
+            from tkinterdnd2 import DND_FILES, TkinterDnD
+
+            if hasattr(TkinterDnD, "_require"):
+                TkinterDnD._require(self)
+            else:
+                self.tk.call("package", "require", "tkdnd")
+            for w in (self.entry, self):
+                w.drop_target_register(DND_FILES)
+                w.dnd_bind("<<Drop>>", self._on_drop)
+            self._dnd = True
+        except Exception:
+            self._dnd = False
+
+    def _on_drop(self, event):
+        try:
+            paths = list(self.tk.splitlist(event.data))
+        except Exception:
+            paths = []
+        if paths:
+            self.add_dropped_files(paths)
+        return "break"
+
+    def add_dropped_files(self, paths: list) -> None:
+        blocks = []
+        for p in paths:
+            blocks.append(read_file_block(p))
+            self._attachments.append(Path(p).name)
+        if not blocks:
+            return
+        current = self.entry.get("1.0", "end").rstrip("\n")
+        text = (current + "\n\n" if current else "") + "\n\n".join(blocks) + "\n"
+        self.entry.delete("1.0", "end")
+        self.entry.insert("1.0", text)
+        self.attach_label.configure(text="📎 " + ", ".join(self._attachments[-8:]))
 
     def _on_return(self, event):
         if not (event.state & 0x1):
@@ -112,6 +158,8 @@ class ChatView(ctk.CTkFrame):
         if not text:
             return
         self.entry.delete("1.0", "end")
+        self._attachments = []
+        self.attach_label.configure(text="")
         self.on_send(text)
 
     def set_busy(self, busy: bool) -> None:

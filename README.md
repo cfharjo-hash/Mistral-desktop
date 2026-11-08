@@ -19,6 +19,9 @@ OpenRouter, Together, vLLM, …).
     "Test connection" button. Examples below.
 - **Streaming chat UI** — token-by-token rendering, Enter to send / Shift+Enter for newline,
   per-agent system prompts, change model inline, clear chat, right-click an agent to delete it.
+- **Drag & drop files into the chat box** (via `tkinterdnd2`): text files are inlined into the
+  message as fenced context blocks (truncated at 200 KB), binary files are listed as
+  attachments. If `tkinterdnd2` isn't installed the app still runs, just without drop support.
 - **Settings** — Mistral API key, HF token, light/dark theme, and a **Test keys** button that
   validates each key against its API and shows which source (env var vs. saved) is active.
   Keys are read from env vars first (`MISTRAL_API_KEY`, `HF_TOKEN` / `HUGGING_FACE_HUB_TOKEN`),
